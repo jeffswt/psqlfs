@@ -5,7 +5,7 @@ import psycopg2
 #  SQL database entry point
 ################################################################################
 
-class SQLEntry:
+class PSQLEntry:
     """ PostgreSQL server wrapping utility, used to ease connections with the
     remote database. This class is called from both file wrappers and
     filesystem hierarchy wrappers.
