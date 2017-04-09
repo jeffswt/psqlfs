@@ -145,4 +145,55 @@ class LogicalBlockManager:
             self.max_conns = initialize['max_conns']
         # Finished, not testing
         pass
+
+    def create(self, args):
+        """ create(args):
+        Create required tables in database. This requires the same data tags
+        as __init__ does should it create a database for the first time.
+        """
+        # Dumping arguments
+        j_args = json.dumps(args)
+        with self.db.connect() as p_db:
+            # Creating database
+            with p_db.cursor() as p_csr:
+                p_csr.execute("""
+                    CREATE TABLE psqlfs_master(
+                        tag         TEXT,
+                        data        TEXT
+                    ); -- Master table, stores volatile information
+                    CREATE TABLE psqlfs_locks(
+                        tag         TEXT
+                    ); -- TODO FIXME: NOT YET IMPLEMENTED!
+                    CREATE TABLE psqlfs_data(
+                        tag         TEXT
+                    ); -- TODO FIXME: NOT YET IMPLEMENTED!
+                """, ())
+                # Does not read results
+                pass
+            # Inserting volatile information
+            with p_db.cursor() as p_csr:
+                p_csr.execute("""
+                    INSERT INTO psqlfs_master
+                        (tag, data) VALUES
+                        (%s, %s)
+                    """, (
+                        'properties',
+                        j_args
+                    ))
+        # Finished database creation
+        return
+
+    def DESTROY(self, magic=None):
+        """ DESTROY():
+        USING THIS OPERATION IS AT YOUR OWN RISK! WITHOUT SERIOUS RECOVERY
+        TECHNIQUES, ALL DATA WOULD BE PERMANENTLY UNAVAILABLE FROM THE POINT
+        YOU PERFORMED THIS OPERATION.
+
+        TO USE THIS FUNCTION, MAGIC SHOULD BE SET TO 0xfee1dead, WHICH IS THE
+        MAGIC NUMBER IN LINUX REQUIRED TO PERFORM A CRITICAL SHUTDOWN.
+        """
+        if magic != 0xfee1dead:
+            raise AttributeError('Magic number malformed, destroy operation cancelled.')
+        raise NotImplementedError('')
+        return
     pass
