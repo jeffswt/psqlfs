@@ -24,7 +24,8 @@ class PSQLEntry:
         instead of caught and printed.
 
         The url should take the following form:
-        ..................... """
+        .....................
+        """
         if url != None:
             raise NotImplementedError('Not yet implemented')
             ...
@@ -81,8 +82,67 @@ class PSQLEntry:
     def connect(self):
         """ connect():
         Returns a connection to the database. This can be used for customized
-        functions acted towards it. """
-
+        functions acted towards it.
+        """
         return psycopg2.connect(**self.connect_params)
     pass
 
+################################################################################
+#  Logical Block Manager
+################################################################################
+
+class LogicalBlockManager:
+    """ Logical Block Manager dynamically managers the data and scatters the
+    data throughout the dedicated rows. Concurrency is guaranteed through a
+    mathematical expectation of collision. Mostly this collision would be very
+    rare, and would affect performance subtly.
+
+    The maximum connections and dedicated rows should be provided if this is the
+    first time this database initializes.
+
+    The table name is concatencated with additional metadata, such as 'psqlfs'
+    as a table name would yield 'psqlfs_master' et al, which should be avoided as
+    much as possible."""
+
+    def __init__(self, db, initialize=None):
+        """ __init__(db):
+        Uses created database as *the base*, and takes 'psqlfs...' as table
+        prefix. The argument 'initialize' is used or not used, depending on
+        whether it is initialized for the first time.
+
+        If this is the first time this FS is created, arguments should be set
+        in initialize as a dict() type, which should contain the following
+        datum:
+
+          - max_rows - int(), Maximum rows dedicated to this file system.
+          - max_conns - int(), Maximum connections allowed.
+
+        If this is not the first time, LBM would automatically read the config
+        from the master table.
+        """
+        self.db = db
+        self.table_prefix = table_name
+        # Set default values
+        if not initialize:
+            props = {}
+            with self.db.connect() as p_db:
+                with p_db.cursor() as p_csr:
+                    # Takes the JSON string out.
+                    p_csr.execute("""
+                        SELECT * FROM psqlfs_master WHERE tag = 'properties'
+                    """, ())
+                    # Fetch only one item / as JSON.
+                    j_res = p_csr.fetchone()
+                    # Parsing to dict()
+                    props = json.loads(j_res)
+            # Attaching conditions
+            self.max_rows = props['max_rows']
+            self.max_conns = props['max_conns']
+        # Create a new table.
+        elif initialize:
+            self.create(initialize)
+            self.max_rows = initialize['max_rows']
+            self.max_conns = initialize['max_conns']
+        # Finished, not testing
+        pass
+    pass
